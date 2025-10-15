@@ -1,0 +1,12 @@
+[package]
+name = "privdm_backend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+argon2 = "0.5.3"
+axum = { version = "0.8.6", features = ["ws"] }
+dotenvy = "0.15.7"
+sha2 = "0.10.9"
+sqlx = { version = "0.8.6", features = ["macros", "postgres", "runtime-tokio-native-tls", "time"] }
+tokio = { version = "1.47.1", features = ["full"] }
