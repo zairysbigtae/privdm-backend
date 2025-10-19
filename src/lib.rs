@@ -1,2 +1,3 @@
 pub mod websocket;
-use websocket::ws_handler;
+pub mod http;
+pub mod user_struct;

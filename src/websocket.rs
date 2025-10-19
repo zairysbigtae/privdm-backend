@@ -1,6 +1,4 @@
-use argon2::{password_hash::{rand_core::OsRng, SaltString}, Argon2, PasswordHash, PasswordHasher};
 use axum::{extract::{ws::{self, Utf8Bytes, WebSocket}, State, WebSocketUpgrade}, response::Response};
-use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Pool, Postgres};
 
 pub async fn ws_handler(ws: WebSocketUpgrade, State(pool): State<PgPool>) -> Response {
@@ -28,12 +26,6 @@ insert_msg - Sends a message
 delete_msg - Deletes a message
 edit_msg - Edits a message
 
---- USER ---
-get_users - Get users
-insert_user - Creates a new account
-delete_user - Deletes a user
-edit_user - Edits a user
-
 --- ROOM ---
 get_rooms - Get rooms
 insert_room - Creates a new room
@@ -44,7 +36,6 @@ edit_room - Edits a room")).await.unwrap();
         }
 
         msgs_command(&mut socket, &pool, &text).await;
-        users_command(&mut socket, &pool, &text).await;
         rooms_command(&mut socket, &pool, &text).await;
     }
 }
@@ -101,74 +92,6 @@ async fn msgs_command(socket: &mut WebSocket, pool: &PgPool, text: &Utf8Bytes) {
     }
 }
 
-async fn users_command(socket: &mut WebSocket, pool: &PgPool, text: &Utf8Bytes) {
-    let ws_msg = |txt: &str| ws::Message::Text(txt.into());
-
-    match text.as_str() {
-        // 1. get users
-        // 2. insert user
-        // 3. delete user
-        // 4. edit user
-        "get_users" => {
-            socket.send(ws_msg("Requesting messages...")).await.unwrap();
-
-            let record = sqlx::query!("SELECT id, room_id, name, joined_at FROM users")
-                .fetch_all(pool)
-                .await.unwrap();
-
-            if socket.send(ws_msg(&format!("Users: {record:?}"))).await.is_err() { return; }
-        }
-        "insert_user" => {
-            socket.send(ws_msg("Creating a new account...")).await.unwrap();
-            socket.send(ws_msg("Account name: ")).await.unwrap();
-
-            if let Some(Ok(name)) = socket.recv().await {
-                socket.send(ws_msg("Pass: ")).await.unwrap();
-
-                if let Some(Ok(pass)) = socket.recv().await {
-                    let name_str = name.to_text().unwrap();
-                    let pass_str = pass.to_text().unwrap();
-
-                    println!("{name_str}");
-
-                    let salt = SaltString::generate(&mut OsRng);
-                    let argon2 = Argon2::default();
-
-                    let hashed = 
-                        argon2.hash_password(pass_str.as_bytes(), &salt)
-                        .unwrap()
-                        .to_string();
-
-                    let parsed_hash = PasswordHash::new(&hashed).unwrap();
-
-                    sqlx::query!("INSERT INTO users (name, pass_hash) VALUES ($1, $2)", name_str, parsed_hash.to_string())
-                        .execute(pool)
-                        .await.unwrap();
-
-                    if socket.send(ws_msg(&format!("Inserted \"{name:?}\""))).await.is_err() { return; }
-                }
-            }
-        }
-        "delete_user" => {
-            socket.send(ws_msg("Deleting a user...")).await.unwrap();
-            socket.send(ws_msg("ID: ")).await.unwrap();
-
-            if let Some(Ok(id)) = socket.recv().await {
-                let id_str = id.to_text().unwrap();
-
-                sqlx::query!("DELETE FROM users WHERE id = $1",
-                    id_str.parse::<i32>().expect("Couldn't get the ID, is the id valid or not?"))
-                    .execute(pool)
-                    .await.unwrap();
-
-                if socket.send(ws_msg("Deleted")).await.is_err() { return; }
-            }
-        }
-        "edit_user" => todo!(),
-        _ => ()
-    }
-}
-
 async fn rooms_command(socket: &mut WebSocket, pool: &PgPool, text: &Utf8Bytes) {
     let ws_msg = |txt: &str| ws::Message::Text(txt.into());
 
@@ -220,4 +143,3 @@ async fn rooms_command(socket: &mut WebSocket, pool: &PgPool, text: &Utf8Bytes) 
         _ => ()
     }
 }
-
