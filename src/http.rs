@@ -53,11 +53,10 @@ pub async fn login_handler(
 
     let argon2 = Argon2::default();
 
-    let _ = argon2
+    argon2
         .verify_password(payload.pass.as_bytes(), &parsed_hash)
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Wrong password".into()))?;
 
     let key = std::env::var("JWT_KEY").expect("JWT_KEY not set in .env");
     Ok(generate_token(name, key))
 }
-
