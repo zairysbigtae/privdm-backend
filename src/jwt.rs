@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Claim {
     pub iat: usize,
-    pub eat: usize,
+    pub exp: usize,
     pub name: String,
 }
 
@@ -15,7 +15,7 @@ pub fn generate_token<S: AsRef<str>>(name: S, secret: S) -> String {
 
     let claim = Claim {
         iat: now.timestamp() as usize,
-        eat: (now + expire).timestamp() as usize,
+        exp: (now + expire).timestamp() as usize,
         name: name.as_ref().to_owned(),
     };
 
