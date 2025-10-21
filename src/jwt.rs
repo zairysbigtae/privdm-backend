@@ -11,7 +11,7 @@ pub struct Claim {
 
 pub fn generate_token<S: AsRef<str>>(name: S, secret: S) -> String {
     let now = Utc::now();
-    let expire = Duration::weeks(26); // 26 weeks for 6 months
+    let expire = Duration::days(182); // 6 months
 
     let claim = Claim {
         iat: now.timestamp() as usize,
