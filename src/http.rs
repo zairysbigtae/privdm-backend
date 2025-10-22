@@ -5,10 +5,16 @@ use serde::Serialize;
 use sqlx::PgPool;
 use crate::{jwt::generate_token, user_struct::CreateUser};
 
+#[derive(Serialize)]
+pub struct Token {
+    pub refresh_token: String,
+    pub access_token: String,
+}
+
 pub async fn signup_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateUser>, 
-) -> Result<StatusCode, (StatusCode, String)> {
+) -> Result<Json<Token>, (StatusCode, String)> {
     let name = payload.name;
     let raw_pass = payload.pass;
 
@@ -35,19 +41,17 @@ pub async fn signup_handler(
         .execute(&pool)
         .await.unwrap();
 
-    Ok(StatusCode::CREATED)
-}
-
-#[derive(Serialize)]
-pub struct LoginToken {
-    pub refresh_token: String,
-    pub access_token: String,
+    let key = std::env::var("JWT_KEY").expect("JWT_KEY not set in .env");
+    Ok(Json(Token {
+        refresh_token: generate_token(name.clone(), key.clone(), Duration::days(182)),
+        access_token: generate_token(name.clone(), key.clone(), Duration::minutes(30)),
+    }))
 }
 
 pub async fn login_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateUser>,
-) -> Result<Json<LoginToken>, (StatusCode, String)> {
+) -> Result<Json<Token>, (StatusCode, String)> {
     let name = payload.name;
 
     let row = sqlx::query!("SELECT name, pass_hash FROM users WHERE name = $1", name)
@@ -66,7 +70,7 @@ pub async fn login_handler(
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Wrong password".into()))?;
 
     let key = std::env::var("JWT_KEY").expect("JWT_KEY not set in .env");
-    Ok(Json(LoginToken {
+    Ok(Json(Token {
         refresh_token: generate_token(name.clone(), key.clone(), Duration::days(182)),
         access_token: generate_token(name.clone(), key.clone(), Duration::minutes(30)),
     }))
