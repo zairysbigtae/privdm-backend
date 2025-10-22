@@ -1,6 +1,7 @@
 use argon2::{password_hash::{rand_core::OsRng, SaltString}, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::Duration;
+use serde::Serialize;
 use sqlx::PgPool;
 use crate::{jwt::generate_token, user_struct::CreateUser};
 
@@ -37,6 +38,7 @@ pub async fn signup_handler(
     Ok(StatusCode::CREATED)
 }
 
+#[derive(Serialize)]
 pub struct LoginToken {
     pub refresh_token: String,
     pub access_token: String,
