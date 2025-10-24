@@ -10,6 +10,7 @@ use crate::{jwt::generate_token, user_struct::{CreateUser, User, UserPublicInfo}
 
 #[derive(Serialize)]
 pub struct Token {
+    pub user_id: i32,
     pub refresh_token: String,
     pub access_token: String,
 }
@@ -21,7 +22,7 @@ pub async fn signup_handler(
     let name = payload.name;
     let raw_pass = payload.pass;
 
-    let row = sqlx::query!("SELECT name FROM users WHERE name = $1", name)
+    let row = sqlx::query!("SELECT id, name FROM users WHERE name = $1", name)
         .fetch_optional(&pool)
         .await
         .unwrap();
@@ -44,8 +45,13 @@ pub async fn signup_handler(
         .execute(&pool)
         .await.unwrap();
 
+    let new_user_record = sqlx::query!("SELECT id FROM users WHERE name = $1", name)
+        .fetch_optional(&pool)
+        .await.unwrap().unwrap();
+
     let key = std::env::var("JWT_KEY").expect("JWT_KEY not set in .env");
     Ok(Json(Token {
+        user_id: new_user_record.id,
         refresh_token: generate_token(name.clone(), key.clone(), Duration::days(182)),
         access_token: generate_token(name.clone(), key.clone(), Duration::minutes(30)),
     }))
@@ -57,7 +63,7 @@ pub async fn login_handler(
 ) -> Result<Json<Token>, (StatusCode, String)> {
     let name = payload.name;
 
-    let row = sqlx::query!("SELECT name, pass_hash FROM users WHERE name = $1", name)
+    let row = sqlx::query!("SELECT id, name, pass_hash FROM users WHERE name = $1", name)
         .fetch_optional(&pool)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "db error".into()))?
@@ -74,6 +80,7 @@ pub async fn login_handler(
 
     let key = std::env::var("JWT_KEY").expect("JWT_KEY not set in .env");
     Ok(Json(Token {
+        user_id: row.id,
         refresh_token: generate_token(name.clone(), key.clone(), Duration::days(182)),
         access_token: generate_token(name.clone(), key.clone(), Duration::minutes(30)),
     }))

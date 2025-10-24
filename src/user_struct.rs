@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
+use crate::http::Token;
+
 #[derive(Deserialize)]
 pub struct CreateUser {
     pub name: String,
