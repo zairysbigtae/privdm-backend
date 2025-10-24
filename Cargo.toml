@@ -11,4 +11,5 @@ dotenvy = "0.15.7"
 jsonwebtoken = { version = "10.1.0", features = ["rust_crypto"] }
 serde = { version = "1.0.228", features = ["derive"] }
 sqlx = { version = "0.8.6", features = ["chrono", "macros", "postgres", "runtime-tokio-native-tls", "time"] }
+time = { version = "0.3.44", features = ["serde"] }
 tokio = { version = "1.47.1", features = ["full"] }

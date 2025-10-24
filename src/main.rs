@@ -1,5 +1,5 @@
 use axum::{routing::{any, get, post}, Router};
-use privdm_backend::{http::{login_handler, signup_handler}, websocket::ws_handler};
+use privdm_backend::{http::{get_user, login_handler, signup_handler}, websocket::ws_handler};
 use sqlx::PgPool;
 use dotenvy::dotenv;
 
@@ -15,6 +15,7 @@ async fn main() {
         .route("/ws", any(ws_handler))
         .route("/signup", post(signup_handler))
         .route("/login", post(login_handler))
+        .route("/users", get(get_user))
         .with_state(pool);
 
     #[cfg(debug_assertions)] {
