@@ -115,3 +115,4 @@ pub async fn get_user(
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
 }
+

@@ -1,5 +1,5 @@
 use axum::{routing::{any, get, post}, Router};
-use privdm_backend::{http::{get_user, login_handler, signup_handler}, websocket::ws_handler};
+use privdm_backend::{http::user::{get_user, login_handler, signup_handler}, websocket::ws_handler};
 use sqlx::PgPool;
 use dotenvy::dotenv;
 
