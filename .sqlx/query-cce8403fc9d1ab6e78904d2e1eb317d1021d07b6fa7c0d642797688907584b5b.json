@@ -1,15 +1,20 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT name, pass_hash FROM users WHERE name = $1",
+  "query": "SELECT id, name, pass_hash FROM users WHERE name = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
         "name": "name",
         "type_info": "Text"
       },
       {
-        "ordinal": 1,
+        "ordinal": 2,
         "name": "pass_hash",
         "type_info": "Varchar"
       }
@@ -20,9 +25,10 @@
       ]
     },
     "nullable": [
+      false,
       true,
       false
     ]
   },
-  "hash": "9a4d1de405f9fe98e1b2fa7ff4861c574287a4e993265633dd655b8b0f24ca22"
+  "hash": "cce8403fc9d1ab6e78904d2e1eb317d1021d07b6fa7c0d642797688907584b5b"
 }

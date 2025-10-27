@@ -20,9 +20,12 @@ async fn handle_socket(mut socket: WebSocket, pool: Pool<Postgres>) {
             "help" => {
                 socket.send(ws_msg(
                 "
+--- USER ---
+attach_user_to_room - Attaches a user to room
+
 --- MESSAGE ---
 get_msgs - Get messages
-insert_msg - Sends a message
+insert_msg  - Sends a message
 delete_msg - Deletes a message
 edit_msg - Edits a message
 
@@ -35,8 +38,50 @@ edit_room - Edits a room")).await.unwrap();
             _ => ()
         }
 
+        users_command(&mut socket, &pool, &text).await;
         msgs_command(&mut socket, &pool, &text).await;
         rooms_command(&mut socket, &pool, &text).await;
+    }
+}
+
+async fn users_command(socket: &mut WebSocket, pool: &PgPool, text: &Utf8Bytes) {
+    let ws_msg = |txt: &str| ws::Message::Text(txt.into());
+
+    match text.as_str() {
+        // 1. attach user id to room id
+        "attach_user_to_room" => {
+            socket.send(ws_msg("Attaching user to room..")).await.unwrap();
+            socket.send(ws_msg("User ID: ")).await.unwrap();
+
+            if let Some(Ok(user_id)) = socket.recv().await {
+                let user_id = user_id
+                    .to_text()
+                    .unwrap()
+                    .parse::<i32>().unwrap();
+
+                let room_ids_record = sqlx::query!("SELECT room_ids FROM users WHERE id = $1", user_id)
+                    .fetch_one(pool)
+                    .await.unwrap();
+
+                let mut room_ids = room_ids_record.room_ids.unwrap_or(Vec::new());
+
+                socket.send(ws_msg("Room ID: ")).await.unwrap();
+
+                if let Some(Ok(room_id)) = socket.recv().await {
+                    let room_id = room_id
+                        .to_text()
+                        .unwrap()
+                        .parse::<i32>().unwrap();
+
+                    room_ids.push(room_id.into());
+
+                    sqlx::query!("UPDATE users SET room_ids = $1 WHERE id = $2", &room_ids, user_id)
+                        .execute(pool)
+                        .await.unwrap();
+                }
+            }
+        }
+        _ => ()
     }
 }
 
